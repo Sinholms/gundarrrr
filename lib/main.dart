@@ -56,8 +56,9 @@ class _MobileWrapper extends StatelessWidget {
                   : null,
             ),
             child: ClipRRect(
-              borderRadius:
-                  isDesktopFrame ? BorderRadius.circular(20) : BorderRadius.zero,
+              borderRadius: isDesktopFrame
+                  ? BorderRadius.circular(20)
+                  : BorderRadius.zero,
               child: child,
             ),
           ),

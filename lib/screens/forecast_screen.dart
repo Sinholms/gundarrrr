@@ -8,7 +8,10 @@ class ForecastScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalPredicted = MockData.forecastData.fold<int>(0, (s, e) => s + (e['predicted'] as int));
+    final totalPredicted = MockData.forecastData.fold<int>(
+      0,
+      (s, e) => s + (e['predicted'] as int),
+    );
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
@@ -16,11 +19,20 @@ class ForecastScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('AI Forecast', style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 4),
-                  Text('Prediksi produksi untuk besok', style: Theme.of(context).textTheme.bodyMedium),
-                ]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Forecast',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Prediksi produksi untuk besok',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
             ),
             // Summary card
@@ -28,38 +40,95 @@ class ForecastScreen extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(gradient: WessLessTheme.primaryGradient, borderRadius: BorderRadius.circular(16)),
-                child: Row(children: [
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Total Prediksi', style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 12)),
-                    const SizedBox(height: 4),
-                    Text('$totalPredicted porsi', style: Theme.of(context).textTheme.headlineLarge?.copyWith(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 4),
-                    Text('Berdasarkan data 30 hari terakhir', style: TextStyle(color: Colors.white.withAlpha(160), fontSize: 11)),
-                  ])),
-                  Column(children: [
-                    const Text('🤖', style: TextStyle(fontSize: 36)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: Colors.white.withAlpha(30), borderRadius: BorderRadius.circular(6)),
-                      child: const Text('ML Model', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                decoration: BoxDecoration(
+                  gradient: WessLessTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Prediksi',
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(200),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$totalPredicted porsi',
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Berdasarkan data 30 hari terakhir',
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(160),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ]),
-                ]),
+                    Column(
+                      children: [
+                        const Text('🤖', style: TextStyle(fontSize: 36)),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(30),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'ML Model',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             // Info
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                child: Row(children: [
-                  Text('Detail Per Menu', style: Theme.of(context).textTheme.titleLarge),
-                  const Spacer(),
-                  Icon(Icons.info_outline_rounded, size: 16, color: WessLessTheme.textHint),
-                  const SizedBox(width: 4),
-                  Text('Confidence', style: Theme.of(context).textTheme.bodySmall),
-                ]),
+                child: Row(
+                  children: [
+                    Text(
+                      'Detail Per Menu',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: WessLessTheme.textHint,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Confidence',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
             ),
             // Forecast items
@@ -76,42 +145,92 @@ class ForecastScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: Row(children: [
-                    FoodImage(assetPath: item['icon'], size: 36),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(item['menu'], style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14)),
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: (item['confidence'] as num).toDouble(),
-                              minHeight: 6,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: AlwaysStoppedAnimation(_confColor(item['confidence'])),
+                  child: Row(
+                    children: [
+                      FoodImage(assetPath: item['icon'], size: 36),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item['menu'],
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.copyWith(fontSize: 14),
                             ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: (item['confidence'] as num)
+                                          .toDouble(),
+                                      minHeight: 6,
+                                      backgroundColor: Colors.grey.shade200,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        _confColor(item['confidence']),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '$conf%',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _confColor(item['confidence']),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${item['predicted']}',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontSize: 22,
+                                  color: WessLessTheme.primary,
+                                ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('$conf%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _confColor(item['confidence']))),
-                      ]),
-                    ])),
-                    const SizedBox(width: 14),
-                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                      Text('${item['predicted']}', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 22, color: WessLessTheme.primary)),
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(
-                          trend == 'up' ? Icons.trending_up_rounded : trend == 'down' ? Icons.trending_down_rounded : Icons.trending_flat_rounded,
-                          size: 14,
-                          color: trend == 'up' ? WessLessTheme.success : trend == 'down' ? WessLessTheme.error : WessLessTheme.textHint,
-                        ),
-                        const SizedBox(width: 2),
-                        Text('porsi', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10)),
-                      ]),
-                    ]),
-                  ]),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                trend == 'up'
+                                    ? Icons.trending_up_rounded
+                                    : trend == 'down'
+                                    ? Icons.trending_down_rounded
+                                    : Icons.trending_flat_rounded,
+                                size: 14,
+                                color: trend == 'up'
+                                    ? WessLessTheme.success
+                                    : trend == 'down'
+                                    ? WessLessTheme.error
+                                    : WessLessTheme.textHint,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'porsi',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 );
               }, childCount: MockData.forecastData.length),
             ),
@@ -121,15 +240,32 @@ class ForecastScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: WessLessTheme.info.withAlpha(10), borderRadius: BorderRadius.circular(12), border: Border.all(color: WessLessTheme.info.withAlpha(40))),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Icon(Icons.lightbulb_outline_rounded, size: 16, color: WessLessTheme.info),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(
-                      'Prediksi menggunakan algoritma Random Forest berdasarkan pola penjualan harian, tren mingguan, dan faktor hari kerja/weekend. Akurasi meningkat seiring bertambahnya data transaksi.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: WessLessTheme.info, height: 1.5),
-                    )),
-                  ]),
+                  decoration: BoxDecoration(
+                    color: WessLessTheme.info.withAlpha(10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: WessLessTheme.info.withAlpha(40)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 16,
+                        color: WessLessTheme.info,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Prediksi menggunakan algoritma Random Forest berdasarkan pola penjualan harian, tren mingguan, dan faktor hari kerja/weekend. Akurasi meningkat seiring bertambahnya data transaksi.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: WessLessTheme.info,
+                                height: 1.5,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

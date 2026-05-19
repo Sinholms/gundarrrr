@@ -18,8 +18,11 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const MainShell(),
-            transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const MainShell(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) =>
+                    FadeTransition(opacity: animation, child: child),
             transitionDuration: const Duration(milliseconds: 600),
           ),
         );
@@ -39,26 +42,23 @@ class _SplashScreenState extends State<SplashScreen> {
               children: [
                 // Logo
                 Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(40),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(40),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '🍃',
-                      style: TextStyle(fontSize: 56),
-                    ),
-                  ),
-                )
+                      child: const Center(
+                        child: Text('🍃', style: TextStyle(fontSize: 56)),
+                      ),
+                    )
                     .animate()
                     .scale(duration: 600.ms, curve: Curves.easeOutBack)
                     .fadeIn(duration: 400.ms),
@@ -66,14 +66,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
                 // App Name
                 Text(
-                  'WessLess',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1,
-                      ),
-                )
+                      'WessLess',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1,
+                          ),
+                    )
                     .animate(delay: 300.ms)
                     .fadeIn(duration: 500.ms)
                     .slideY(begin: 0.3, end: 0, duration: 500.ms),
@@ -82,13 +83,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
                 // Tagline
                 Text(
-                  'Produksi Cerdas, Kurangi Sisa',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      'Produksi Cerdas, Kurangi Sisa',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white.withAlpha(200),
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
-                )
+                    )
                     .animate(delay: 500.ms)
                     .fadeIn(duration: 500.ms)
                     .slideY(begin: 0.3, end: 0, duration: 500.ms),
@@ -100,12 +101,10 @@ class _SplashScreenState extends State<SplashScreen> {
                   'AI-Powered Production Forecasting\nuntuk UMKM Kuliner',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withAlpha(140),
-                        fontSize: 12,
-                      ),
-                )
-                    .animate(delay: 700.ms)
-                    .fadeIn(duration: 500.ms),
+                    color: Colors.white.withAlpha(140),
+                    fontSize: 12,
+                  ),
+                ).animate(delay: 700.ms).fadeIn(duration: 500.ms),
 
                 const SizedBox(height: 48),
 
@@ -119,9 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       Colors.white.withAlpha(180),
                     ),
                   ),
-                )
-                    .animate(delay: 900.ms)
-                    .fadeIn(duration: 400.ms),
+                ).animate(delay: 900.ms).fadeIn(duration: 400.ms),
               ],
             ),
           ),
