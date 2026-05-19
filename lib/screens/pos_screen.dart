@@ -176,6 +176,9 @@ class _PosScreenState extends State<PosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Proactively remove items that are no longer in the menu
+    _removeUnavailableCartItems();
+
     final categories = ['Semua', 'Makanan', 'Minuman', 'Tambahan'];
     return Scaffold(
       body: SafeArea(
