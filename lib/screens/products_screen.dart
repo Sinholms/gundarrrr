@@ -6,7 +6,8 @@ import '../core/food_image.dart';
 import '../data/mock_data.dart';
 
 class ProductsScreen extends StatelessWidget {
-  const ProductsScreen({super.key});
+  final VoidCallback? onAddMenu;
+  const ProductsScreen({super.key, this.onAddMenu});
 
   @override
   Widget build(BuildContext context) {
@@ -35,17 +36,20 @@ class ProductsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: WessLessTheme.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 20,
+                    GestureDetector(
+                      onTap: onAddMenu,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: WessLessTheme.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -60,15 +64,18 @@ class ProductsScreen extends StatelessWidget {
                 return Container(
                   margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   decoration: BoxDecoration(
-                    color: WessLessTheme.surfaceCard,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
+                  child: Material(
+                    color: WessLessTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(14),
+                    clipBehavior: Clip.antiAlias,
+                    child: Theme(
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 4,
@@ -227,9 +234,10 @@ class ProductsScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                );
-              }, childCount: MockData.menuItems.length),
-            ),
+                ),
+              );
+            }, childCount: MockData.menuItems.length),
+          ),
             // Info card
             SliverToBoxAdapter(
               child: Padding(

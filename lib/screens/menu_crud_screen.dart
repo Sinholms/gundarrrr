@@ -8,7 +8,8 @@ import '../core/theme.dart';
 import '../data/mock_data.dart';
 
 class MenuCrudScreen extends StatefulWidget {
-  const MenuCrudScreen({super.key});
+  final VoidCallback? onMenuChanged;
+  const MenuCrudScreen({super.key, this.onMenuChanged});
 
   @override
   State<MenuCrudScreen> createState() => _MenuCrudScreenState();
@@ -70,6 +71,7 @@ class _MenuCrudScreenState extends State<MenuCrudScreen> {
                 };
               }
             });
+            widget.onMenuChanged?.call();
             Navigator.pop(ctx);
           },
         );
@@ -96,6 +98,7 @@ class _MenuCrudScreenState extends State<MenuCrudScreen> {
                   (menu) => menu['id'] == item['id'],
                 );
               });
+              widget.onMenuChanged?.call();
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(

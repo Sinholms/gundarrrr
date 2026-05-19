@@ -17,20 +17,19 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens;
+  List<Widget> get _screens => [
+        DashboardScreen(onOpenRestock: () => setState(() => _currentIndex = 5)),
+        PosScreen(onTransactionCompleted: () => setState(() {})),
+        const ForecastScreen(),
+        ProductsScreen(onAddMenu: () => setState(() => _currentIndex = 6)),
+        const StockScreen(),
+        const RestockScreen(),
+        MenuCrudScreen(onMenuChanged: () => setState(() {})),
+      ];
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      DashboardScreen(onOpenRestock: () => setState(() => _currentIndex = 5)),
-      PosScreen(onTransactionCompleted: () => setState(() {})),
-      const ForecastScreen(),
-      const ProductsScreen(),
-      const StockScreen(),
-      const RestockScreen(),
-      const MenuCrudScreen(),
-    ];
   }
 
   // Only show 5 in bottom nav, use "Lainnya" for overflow
@@ -69,52 +68,57 @@ class _MainShellState extends State<MainShell> {
                     ? _currentIndex >= 4
                     : _currentIndex == i;
 
-                return GestureDetector(
-                  onTap: () {
-                    if (isMore) {
-                      _showMoreMenu(context);
-                    } else {
-                      setState(() => _currentIndex = i);
-                    }
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSelected ? 14 : 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? WessLessTheme.primary.withAlpha(20)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          nav.icon,
-                          size: 22,
-                          color: isSelected
-                              ? WessLessTheme.primary
-                              : WessLessTheme.textHint,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          nav.label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w400,
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (isMore) {
+                        _showMoreMenu(context);
+                      } else {
+                        setState(() => _currentIndex = i);
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSelected ? 4 : 2,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? WessLessTheme.primary.withAlpha(20)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            nav.icon,
+                            size: 22,
                             color: isSelected
                                 ? WessLessTheme.primary
                                 : WessLessTheme.textHint,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              nav.label,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                                color: isSelected
+                                    ? WessLessTheme.primary
+                                    : WessLessTheme.textHint,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
