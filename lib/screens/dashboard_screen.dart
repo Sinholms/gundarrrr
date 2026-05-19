@@ -5,7 +5,9 @@ import '../core/food_image.dart';
 import '../data/mock_data.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onOpenRestock;
+
+  const DashboardScreen({super.key, this.onOpenRestock});
 
   String get _greeting {
     final h = DateTime.now().hour;
@@ -78,7 +80,8 @@ class DashboardScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Food Waste Berkurang',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
                                   color: Colors.white.withAlpha(200),
                                   fontSize: 12,
                                 ),
@@ -86,7 +89,8 @@ class DashboardScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             '${MockData.todayStats['waste_reduction']}%',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
                                   color: Colors.white,
                                   fontSize: 36,
                                   fontWeight: FontWeight.w900,
@@ -95,16 +99,20 @@ class DashboardScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Hemat ${MockData.formatCurrency(MockData.todayStats['cost_saved'])} minggu ini',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withAlpha(180),
-                                ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.white.withAlpha(180)),
                           ),
                         ],
                       ),
                     ),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.asset('assets/images/sprout.png', width: 56, height: 56, fit: BoxFit.cover),
+                      child: Image.asset(
+                        'assets/images/sprout.png',
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ],
                 ),
@@ -119,7 +127,9 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     _StatCard(
                       label: 'Penjualan Hari Ini',
-                      value: MockData.formatCurrency(MockData.todayStats['total_sales']),
+                      value: MockData.formatCurrency(
+                        MockData.todayStats['total_sales'],
+                      ),
                       icon: Icons.payments_outlined,
                       color: WessLessTheme.info,
                     ),
@@ -156,21 +166,27 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Penjualan 7 Hari',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Expanded(
+                          child: Text(
+                            'Penjualan 7 Hari',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                         ),
+                        const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: WessLessTheme.primary.withAlpha(15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Minggu Ini',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   color: WessLessTheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -188,9 +204,15 @@ class DashboardScreen extends StatelessWidget {
                           barTouchData: BarTouchData(enabled: false),
                           titlesData: FlTitlesData(
                             show: true,
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            leftTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
@@ -225,7 +247,9 @@ class DashboardScreen extends StatelessWidget {
                               x: i,
                               barRods: [
                                 BarChartRodData(
-                                  toY: (MockData.salesHistory[i]['sales'] as num).toDouble(),
+                                  toY:
+                                      (MockData.salesHistory[i]['sales'] as num)
+                                          .toDouble(),
                                   color: i == 5
                                       ? WessLessTheme.primary
                                       : WessLessTheme.primary.withAlpha(80),
@@ -265,8 +289,11 @@ class DashboardScreen extends StatelessWidget {
                           'Prediksi Besok',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        Icon(Icons.auto_graph_rounded,
-                            size: 18, color: WessLessTheme.secondary),
+                        Icon(
+                          Icons.auto_graph_rounded,
+                          size: 18,
+                          color: WessLessTheme.secondary,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -275,55 +302,72 @@ class DashboardScreen extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 16),
-                    ...MockData.forecastData.take(4).map((item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            children: [
-                              FoodImage(assetPath: item['icon'], size: 28),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item['menu'],
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: (item['confidence'] as num).toDouble(),
-                                        minHeight: 4,
-                                        backgroundColor: Colors.grey.shade200,
-                                        valueColor: AlwaysStoppedAnimation(
-                                          _confidenceColor(item['confidence']),
+                    ...MockData.forecastData
+                        .take(4)
+                        .map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                FoodImage(assetPath: item['icon'], size: 28),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['menu'],
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: (item['confidence'] as num)
+                                              .toDouble(),
+                                          minHeight: 4,
+                                          backgroundColor: Colors.grey.shade200,
+                                          valueColor: AlwaysStoppedAnimation(
+                                            _confidenceColor(
+                                              item['confidence'],
+                                            ),
+                                          ),
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${item['predicted']} porsi',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            color: WessLessTheme.primary,
+                                            fontSize: 13,
+                                          ),
+                                    ),
+                                    Text(
+                                      '${((item['confidence'] as num) * 100).toInt()}%',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(fontSize: 10),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${item['predicted']} porsi',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: WessLessTheme.primary,
-                                          fontSize: 13,
-                                        ),
-                                  ),
-                                  Text(
-                                    '${((item['confidence'] as num) * 100).toInt()}%',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        )),
+                        ),
                   ],
                 ),
               ),
@@ -331,51 +375,64 @@ class DashboardScreen extends StatelessWidget {
 
             // Stock Alert
             SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Material(
                   color: WessLessTheme.warning.withAlpha(15),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: WessLessTheme.warning.withAlpha(60)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
+                  child: InkWell(
+                    onTap: onOpenRestock,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: WessLessTheme.warning.withAlpha(30),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: WessLessTheme.warning.withAlpha(60),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.warning_amber_rounded,
-                        color: WessLessTheme.warning,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            '3 bahan baku perlu restock',
-                            style: Theme.of(context).textTheme.titleMedium,
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: WessLessTheme.warning.withAlpha(30),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              color: WessLessTheme.warning,
+                              size: 20,
+                            ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Bawang Merah, Beras, Tepung Terigu',
-                            style: Theme.of(context).textTheme.bodySmall,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '3 bahan baku perlu restock',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Bawang Merah, Beras, Tepung Terigu',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: WessLessTheme.textHint,
                           ),
                         ],
                       ),
                     ),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: WessLessTheme.textHint,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -391,74 +448,77 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final trx = MockData.recentTransactions[index];
-                  return Container(
-                    margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: WessLessTheme.surfaceCard,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: WessLessTheme.primary.withAlpha(15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${trx['qty']}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: WessLessTheme.primary,
-                              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final trx = MockData.recentTransactions[index];
+                return Container(
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: WessLessTheme.surfaceCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: WessLessTheme.primary.withAlpha(15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${trx['qty']}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: WessLessTheme.primary,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                trx['id'],
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13),
-                              ),
-                              Text(
-                                (trx['items'] as List).take(2).join(', '),
-                                style: Theme.of(context).textTheme.bodySmall,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              MockData.formatCurrency(trx['total']),
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13),
+                              trx['id'],
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.copyWith(fontSize: 13),
                             ),
                             Text(
-                              trx['time'],
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+                              (trx['items'] as List).take(2).join(', '),
+                              style: Theme.of(context).textTheme.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                },
-                childCount: MockData.recentTransactions.length,
-              ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            MockData.formatCurrency(trx['total']),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(fontSize: 13),
+                          ),
+                          Text(
+                            trx['time'],
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }, childCount: MockData.recentTransactions.length),
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -491,6 +551,8 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCurrencyValue = value.startsWith('Rp');
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -504,17 +566,27 @@ class _StatCard extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: color),
             const SizedBox(height: 10),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontSize: 15,
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: isCurrencyValue ? 13 : 15,
                     fontWeight: FontWeight.w800,
                   ),
+                  maxLines: 1,
+                ),
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontSize: 10),
             ),
           ],
         ),
