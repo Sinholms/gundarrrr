@@ -71,7 +71,7 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(color: color.withAlpha(15), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withAlpha(50))),
         child: Row(children: [
           Container(
@@ -79,8 +79,15 @@ class _SummaryChip extends StatelessWidget {
             decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(8)),
             child: Center(child: Text('$count', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color))),
           ),
-          const SizedBox(width: 10),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            ),
+          ),
         ]),
       ),
     );

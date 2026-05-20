@@ -262,7 +262,7 @@ class _PosScreenState extends State<PosScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 190),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 0.98,
+                  mainAxisExtent: 182,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
@@ -273,7 +273,7 @@ class _PosScreenState extends State<PosScreen> {
                   return GestureDetector(
                     onTap: () => setState(() => _cart[item['id']] = qty + 1),
                     child: Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: qty > 0
                             ? WessLessTheme.primary.withAlpha(10)
