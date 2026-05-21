@@ -35,7 +35,7 @@ class _MobileWrapper extends StatelessWidget {
     final appWidth = isDesktopFrame ? 430.0 : screenWidth;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8E8E8),
+      backgroundColor: const Color(0xFFDCE5E3),
       body: Center(
         child: SizedBox(
           width: appWidth,
