@@ -2,47 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class WessLessTheme {
-  // Brand Colors
-  static const Color primary = Color(0xFF2E7D32);       // Forest Green
-  static const Color primaryLight = Color(0xFF60AD5E);   // Light Green
-  static const Color primaryDark = Color(0xFF005005);    // Dark Green
-  static const Color secondary = Color(0xFFF9A825);      // Amber/Gold
-  static const Color secondaryLight = Color(0xFFFFD95A);
-  static const Color accent = Color(0xFFFF6F00);         // Deep Orange
-  static const Color surface = Color(0xFFF5F9F5);        // Light mint
+  // Brand Colors — Teal / Mint palette
+  static const Color primary = Color(0xFF3BA89E);       // Mid Teal
+  static const Color primaryLight = Color(0xFF6EC6A0);   // Mint Green
+  static const Color primaryDark = Color(0xFF1A7D73);    // Dark Teal
+  static const Color secondary = Color(0xFFE8B94A);      // Warm Gold
+  static const Color secondaryLight = Color(0xFFF2D484);
+  static const Color accent = Color(0xFF2D9B8A);         // Deep Teal
+  static const Color surface = Color(0xFFF2F7F6);        // Cool tinted white
   static const Color surfaceCard = Color(0xFFFFFFFF);
-  static const Color background = Color(0xFFF0F5F0);
+  static const Color background = Color(0xFFEDF3F2);
   static const Color error = Color(0xFFD32F2F);
-  static const Color success = Color(0xFF388E3C);
-  static const Color warning = Color(0xFFF57C00);
-  static const Color info = Color(0xFF1976D2);
+  static const Color success = Color(0xFF2D9B8A);
+  static const Color warning = Color(0xFFF5A623);
+  static const Color info = Color(0xFF3BA89E);
 
   // Risk Colors
   static const Color riskHigh = Color(0xFFE53935);
   static const Color riskMedium = Color(0xFFFFA726);
-  static const Color riskLow = Color(0xFF66BB6A);
+  static const Color riskLow = Color(0xFF6EC6A0);
 
   // Text Colors
-  static const Color textPrimary = Color(0xFF1B1B1B);
-  static const Color textSecondary = Color(0xFF5F6368);
-  static const Color textHint = Color(0xFF9AA0A6);
+  static const Color textPrimary = Color(0xFF1B2D2A);
+  static const Color textSecondary = Color(0xFF546E6A);
+  static const Color textHint = Color(0xFF8FA5A1);
   static const Color textOnPrimary = Colors.white;
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
+    colors: [Color(0xFF2D9B8A), Color(0xFF3BA89E)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF388E3C)],
+    colors: [Color(0xFF1A7D73), Color(0xFF2D9B8A), Color(0xFF3BA89E)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFFF9A825), Color(0xFFFF8F00)],
+    colors: [Color(0xFFE8B94A), Color(0xFFF5A623)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

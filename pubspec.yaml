@@ -17,6 +17,9 @@ dependencies:
   percent_indicator: ^4.2.3
   flutter_animate: ^4.5.2
   image_picker: ^1.2.2
+  http: ^1.2.1
+  url_launcher: ^6.2.5
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:

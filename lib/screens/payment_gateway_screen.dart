@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../core/theme.dart';
 import '../data/mock_data.dart';
+import '../services/payment_service.dart';
 
 class PaymentLineItem {
   final String name;
@@ -17,7 +21,12 @@ class PaymentLineItem {
   int get subtotal => price * quantity;
 }
 
-class PaymentGatewayScreen extends StatelessWidget {
+/// Screen that handles Midtrans Snap payment flow.
+///
+/// 1. Calls the backend to create a Snap transaction → gets redirect_url
+/// 2. Opens the Midtrans payment page in a WebView (mobile) or external browser (web)
+/// 3. Detects payment completion and returns the result
+class PaymentGatewayScreen extends StatefulWidget {
   final String orderId;
   final List<PaymentLineItem> items;
   final int totalPrice;
@@ -32,196 +41,580 @@ class PaymentGatewayScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    // Replace this payload with the QRIS string from a payment gateway later.
-    final qrPayload = 'QRIS|WESSLESS|$orderId|$totalPrice';
-
-    return Scaffold(
-      backgroundColor: WessLessTheme.background,
-      appBar: AppBar(
-        title: const Text('Pembayaran'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.pop(context, false),
-        ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _StatusBanner(orderId: orderId),
-              const SizedBox(height: 16),
-              _QrisPanel(payload: qrPayload, totalPrice: totalPrice),
-              const SizedBox(height: 16),
-              _OrderSummary(items: items, totalPrice: totalPrice, note: note),
-              const SizedBox(height: 16),
-              _PaymentTips(),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.pop(context, false),
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  label: const Text('Batal'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context, true),
-                  icon: const Icon(Icons.verified_rounded, size: 18),
-                  label: const Text('Selesai'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  State<PaymentGatewayScreen> createState() => _PaymentGatewayScreenState();
 }
 
-class _StatusBanner extends StatelessWidget {
-  final String orderId;
+class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
+  _PaymentState _state = _PaymentState.loading;
+  String _errorMessage = '';
+  String _redirectUrl = '';
+  WebViewController? _webViewController;
 
-  const _StatusBanner({required this.orderId});
+  @override
+  void initState() {
+    super.initState();
+    _createTransaction();
+  }
+
+  Future<void> _createTransaction() async {
+    try {
+      setState(() => _state = _PaymentState.loading);
+
+      final result = await PaymentService.createTransaction(
+        orderId: widget.orderId,
+        grossAmount: widget.totalPrice,
+        items: widget.items
+            .map((item) => {
+                  'id': item.name.hashCode.toString(),
+                  'name': item.name,
+                  'price': item.price,
+                  'quantity': item.quantity,
+                })
+            .toList(),
+      );
+
+      _redirectUrl = result['redirect_url'] ?? '';
+
+      if (_redirectUrl.isEmpty) {
+        throw const PaymentException('Tidak mendapatkan URL pembayaran');
+      }
+
+      if (kIsWeb) {
+        // On web: launch in a new browser tab
+        setState(() => _state = _PaymentState.webRedirect);
+      } else {
+        // On mobile: load in WebView
+        _initWebView();
+        setState(() => _state = _PaymentState.webview);
+      }
+    } on PaymentException catch (e) {
+      setState(() {
+        _state = _PaymentState.error;
+        _errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _state = _PaymentState.error;
+        _errorMessage = 'Terjadi kesalahan: $e';
+      });
+    }
+  }
+
+  void _initWebView() {
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final url = request.url;
+
+            // Detect deep links (GoPay, ShopeePay, etc.)
+            if (url.startsWith('gojek://') ||
+                url.startsWith('shopeeid://') ||
+                url.startsWith('dana://') ||
+                url.startsWith('ovo://') ||
+                url.startsWith('linkaja://')) {
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+              return NavigationDecision.prevent;
+            }
+
+            // Detect completion URLs
+            if (url.contains('transaction_status=settlement') ||
+                url.contains('transaction_status=capture') ||
+                url.contains('status_code=200')) {
+              _onPaymentSuccess();
+              return NavigationDecision.prevent;
+            }
+
+            if (url.contains('transaction_status=pending')) {
+              _onPaymentPending();
+              return NavigationDecision.prevent;
+            }
+
+            if (url.contains('transaction_status=deny') ||
+                url.contains('transaction_status=cancel') ||
+                url.contains('transaction_status=expire') ||
+                url.contains('status_code=202')) {
+              _onPaymentFailed();
+              return NavigationDecision.prevent;
+            }
+
+            return NavigationDecision.navigate;
+          },
+          onPageStarted: (url) {
+            debugPrint('[Midtrans] Loading: $url');
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(_redirectUrl));
+  }
+
+  void _onPaymentSuccess() {
+    if (!mounted) return;
+    setState(() => _state = _PaymentState.success);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) Navigator.pop(context, true);
+    });
+  }
+
+  void _onPaymentPending() {
+    if (!mounted) return;
+    setState(() => _state = _PaymentState.pending);
+  }
+
+  void _onPaymentFailed() {
+    if (!mounted) return;
+    setState(() {
+      _state = _PaymentState.error;
+      _errorMessage = 'Pembayaran gagal atau dibatalkan.';
+    });
+  }
+
+  Future<void> _openInBrowser() async {
+    final uri = Uri.parse(_redirectUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _checkPaymentStatus() async {
+    try {
+      setState(() => _state = _PaymentState.loading);
+      final status = await PaymentService.checkStatus(widget.orderId);
+      final txStatus = status['transaction_status'] as String? ?? '';
+
+      if (txStatus == 'settlement' || txStatus == 'capture') {
+        _onPaymentSuccess();
+      } else if (txStatus == 'pending') {
+        _onPaymentPending();
+      } else if (txStatus == 'deny' ||
+          txStatus == 'cancel' ||
+          txStatus == 'expire') {
+        _onPaymentFailed();
+      } else {
+        setState(() => _state = _PaymentState.webRedirect);
+      }
+    } catch (e) {
+      setState(() {
+        _state = _PaymentState.webRedirect;
+        _errorMessage = 'Gagal cek status: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: WessLessTheme.primary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(35),
-              borderRadius: BorderRadius.circular(12),
+    return Scaffold(
+      backgroundColor: WessLessTheme.background,
+      appBar: _state == _PaymentState.webview
+          ? AppBar(
+              title: const Text('Pembayaran Midtrans'),
+              leading: IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context, false),
+              ),
+            )
+          : AppBar(
+              title: const Text('Pembayaran'),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => Navigator.pop(context, false),
+              ),
             ),
-            child: const Icon(
-              Icons.qr_code_scanner_rounded,
-              color: Colors.white,
-              size: 24,
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_state) {
+      case _PaymentState.loading:
+        return _LoadingView(totalPrice: widget.totalPrice);
+
+      case _PaymentState.webview:
+        if (_webViewController != null) {
+          return WebViewWidget(controller: _webViewController!);
+        }
+        return _LoadingView(totalPrice: widget.totalPrice);
+
+      case _PaymentState.webRedirect:
+        return _WebRedirectView(
+          orderId: widget.orderId,
+          totalPrice: widget.totalPrice,
+          items: widget.items,
+          note: widget.note,
+          onOpenBrowser: _openInBrowser,
+          onCheckStatus: _checkPaymentStatus,
+          onCancel: () => Navigator.pop(context, false),
+        );
+
+      case _PaymentState.success:
+        return const _StatusView(
+          icon: Icons.check_circle_rounded,
+          color: WessLessTheme.success,
+          title: 'Pembayaran Berhasil!',
+          subtitle: 'Transaksi telah tercatat. Mengalihkan...',
+        );
+
+      case _PaymentState.pending:
+        return _PendingView(
+          orderId: widget.orderId,
+          onCheckStatus: _checkPaymentStatus,
+          onDone: () => Navigator.pop(context, false),
+        );
+
+      case _PaymentState.error:
+        return _ErrorView(
+          message: _errorMessage,
+          onRetry: _createTransaction,
+          onCancel: () => Navigator.pop(context, false),
+        );
+    }
+  }
+}
+
+enum _PaymentState { loading, webview, webRedirect, success, pending, error }
+
+// ---------------------------------------------------------------------------
+// Sub-widgets
+// ---------------------------------------------------------------------------
+
+class _LoadingView extends StatelessWidget {
+  final int totalPrice;
+  const _LoadingView({required this.totalPrice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 56,
+              height: 56,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: WessLessTheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Scan QRIS untuk bayar',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  orderId,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withAlpha(210),
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ],
+            const SizedBox(height: 24),
+            Text(
+              'Menyiapkan pembayaran...',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              MockData.formatCurrency(totalPrice),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: WessLessTheme.primary,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _QrisPanel extends StatelessWidget {
-  final String payload;
+class _WebRedirectView extends StatelessWidget {
+  final String orderId;
   final int totalPrice;
+  final List<PaymentLineItem> items;
+  final String note;
+  final VoidCallback onOpenBrowser;
+  final VoidCallback onCheckStatus;
+  final VoidCallback onCancel;
 
-  const _QrisPanel({
-    required this.payload,
+  const _WebRedirectView({
+    required this.orderId,
     required this.totalPrice,
+    required this.items,
+    required this.note,
+    required this.onOpenBrowser,
+    required this.onCheckStatus,
+    required this.onCancel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: WessLessTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.account_balance_wallet_rounded,
-                  color: WessLessTheme.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'QRIS WessLess',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Status banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: WessLessTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _PrototypeQrCode(payload: payload),
-          const SizedBox(height: 16),
-          Text(
-            MockData.formatCurrency(totalPrice),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: WessLessTheme.primaryDark,
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(35),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.payment_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          MockData.formatCurrency(totalPrice),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          orderId,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withAlpha(210),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Open browser button
+            ElevatedButton.icon(
+              onPressed: onOpenBrowser,
+              icon: const Icon(Icons.open_in_browser_rounded, size: 20),
+              label: const Text('Buka Halaman Pembayaran'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Check status button
+            OutlinedButton.icon(
+              onPressed: onCheckStatus,
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              label: const Text('Cek Status Pembayaran'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Order summary
+            _OrderSummary(
+              items: items,
+              totalPrice: totalPrice,
+              note: note,
+            ),
+            const SizedBox(height: 16),
+
+            // Info
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: WessLessTheme.info.withAlpha(12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: WessLessTheme.info.withAlpha(45)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_rounded,
+                      color: WessLessTheme.info, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Halaman pembayaran Midtrans akan terbuka di browser. Setelah pelanggan selesai bayar, kembali ke sini dan tekan "Cek Status".',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: WessLessTheme.textPrimary,
+                            height: 1.35,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            TextButton(
+              onPressed: onCancel,
+              child: const Text(
+                'Batalkan',
+                style: TextStyle(
+                  color: WessLessTheme.error,
+                  fontWeight: FontWeight.w600,
                 ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Tunjukkan layar ini ke pelanggan untuk discan',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _PrototypeQrCode extends StatelessWidget {
-  final String payload;
+class _StatusView extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
 
-  const _PrototypeQrCode({required this.payload});
+  const _StatusView({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 72, color: color),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
-      child: SizedBox.square(
-        dimension: 230,
-        child: CustomPaint(
-          painter: _QrPatternPainter(payload),
+    );
+  }
+}
+
+class _PendingView extends StatelessWidget {
+  final String orderId;
+  final VoidCallback onCheckStatus;
+  final VoidCallback onDone;
+
+  const _PendingView({
+    required this.orderId,
+    required this.onCheckStatus,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.schedule_rounded,
+                size: 72, color: WessLessTheme.warning),
+            const SizedBox(height: 20),
+            Text(
+              'Menunggu Pembayaran',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Transaksi $orderId sedang menunggu pembayaran pelanggan.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onCheckStatus,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Cek Lagi'),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onDone,
+              child: const Text('Kembali'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onCancel;
+
+  const _ErrorView({
+    required this.message,
+    required this.onRetry,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline_rounded,
+                size: 72, color: WessLessTheme.error),
+            const SizedBox(height: 20),
+            Text(
+              'Gagal',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Coba Lagi'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onCancel,
+              child: const Text('Batal'),
+            ),
+          ],
         ),
       ),
     );
@@ -283,10 +676,11 @@ class _OrderSummary extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item.name,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: WessLessTheme.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: WessLessTheme.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                       ),
                     ),
                     Text(
@@ -340,141 +734,5 @@ class _OrderSummary extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _PaymentTips extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: WessLessTheme.info.withAlpha(12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: WessLessTheme.info.withAlpha(45)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.info_rounded, color: WessLessTheme.info, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Tekan Selesai setelah pembayaran pelanggan berhasil. Pesanan akan otomatis tercatat di kasir.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: WessLessTheme.textPrimary,
-                    height: 1.35,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QrPatternPainter extends CustomPainter {
-  final String payload;
-
-  _QrPatternPainter(this.payload);
-
-  static const int _gridSize = 29;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cell = size.width / _gridSize;
-    final paint = Paint()..color = WessLessTheme.textPrimary;
-    final accentPaint = Paint()..color = WessLessTheme.primary;
-
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
-
-    _drawFinder(canvas, Offset.zero, cell, paint);
-    _drawFinder(canvas, Offset((_gridSize - 7) * cell, 0), cell, paint);
-    _drawFinder(canvas, Offset(0, (_gridSize - 7) * cell), cell, paint);
-
-    var seed = 0;
-    for (final codeUnit in payload.codeUnits) {
-      seed = (seed * 31 + codeUnit) & 0x7fffffff;
-    }
-
-    for (var y = 0; y < _gridSize; y++) {
-      for (var x = 0; x < _gridSize; x++) {
-        if (_isFinderArea(x, y)) continue;
-
-        final value = (x * 73 + y * 151 + seed + (x * y * 17)) & 0xff;
-        final shouldFill =
-            value % 5 == 0 || value % 7 == 0 || (x + y + seed) % 11 == 0;
-
-        if (!shouldFill) continue;
-
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(x * cell, y * cell, cell * 0.9, cell * 0.9),
-            Radius.circular(cell * 0.18),
-          ),
-          (x + y) % 9 == 0 ? accentPaint : paint,
-        );
-      }
-    }
-
-    final labelRect = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2),
-      width: cell * 7.8,
-      height: cell * 3.1,
-    );
-    final labelPaint = Paint()..color = Colors.white;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(labelRect, Radius.circular(cell * 0.7)),
-      labelPaint,
-    );
-
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'QRIS',
-        style: TextStyle(
-          color: WessLessTheme.primaryDark,
-          fontSize: 20,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        (size.width - textPainter.width) / 2,
-        (size.height - textPainter.height) / 2,
-      ),
-    );
-  }
-
-  void _drawFinder(Canvas canvas, Offset origin, double cell, Paint paint) {
-    final whitePaint = Paint()..color = Colors.white;
-    canvas.drawRect(
-      Rect.fromLTWH(origin.dx, origin.dy, cell * 7, cell * 7),
-      paint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(origin.dx + cell, origin.dy + cell, cell * 5, cell * 5),
-      whitePaint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(origin.dx + cell * 2, origin.dy + cell * 2, cell * 3,
-          cell * 3),
-      paint,
-    );
-  }
-
-  bool _isFinderArea(int x, int y) {
-    final inTopLeft = x < 8 && y < 8;
-    final inTopRight = x >= _gridSize - 8 && y < 8;
-    final inBottomLeft = x < 8 && y >= _gridSize - 8;
-    return inTopLeft || inTopRight || inBottomLeft;
-  }
-
-  @override
-  bool shouldRepaint(covariant _QrPatternPainter oldDelegate) {
-    return oldDelegate.payload != payload;
   }
 }
