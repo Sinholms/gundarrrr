@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/food_image.dart';
 import '../data/mock_data.dart';
+import '../models/sales_transaction.dart';
+import '../services/transaction_history_service.dart';
 import 'payment_gateway_screen.dart';
 
 class PosScreen extends StatefulWidget {
@@ -78,41 +80,28 @@ class _PosScreenState extends State<PosScreen> {
         .toList();
   }
 
-  String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
   void _recordPaidOrder({
     required String orderId,
     required List<PaymentLineItem> items,
     required int total,
   }) {
-    final totalQuantity = items.fold<int>(
-      0,
-      (sum, item) => sum + item.quantity,
+    TransactionHistoryService.addTransaction(
+      SalesTransaction(
+        transactionId: orderId,
+        dateTime: DateTime.now(),
+        items: items
+            .map(
+              (item) => SalesTransactionItem(
+                itemName: item.name,
+                quantity: item.quantity,
+                price: item.price,
+              ),
+            )
+            .toList(),
+        totalAmount: total,
+        paymentMethod: 'Midtrans',
+      ),
     );
-
-    MockData.recentTransactions.insert(0, {
-      'id': orderId,
-      'time': _formatTime(DateTime.now()),
-      'items': items
-          .map(
-            (item) => item.quantity > 1
-                ? '${item.quantity}x ${item.name}'
-                : item.name,
-          )
-          .toList(),
-      'total': total,
-      'qty': totalQuantity,
-    });
-    if (MockData.recentTransactions.length > 10) {
-      MockData.recentTransactions.removeRange(
-        10,
-        MockData.recentTransactions.length,
-      );
-    }
   }
 
   Future<void> _openPaymentGateway() async {

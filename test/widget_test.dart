@@ -6,10 +6,10 @@ void main() {
     await tester.pumpWidget(const WessLessApp());
     expect(find.text('WessLess'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 3500));
+    await tester.pump(const Duration(milliseconds: 2200));
     await tester.pumpAndSettle();
     expect(
-      find.text('Warung Geprek Mas Bro', skipOffstage: false),
+      find.text('Selamat datang kembali', skipOffstage: false),
       findsOneWidget,
     );
   });

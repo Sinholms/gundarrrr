@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+
 import '../core/theme.dart';
-import 'main_shell.dart';
+import '../widgets/wessless_logo_mark.dart';
+import 'auth_gate.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,16 +16,16 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 2800), () {
+    Future.delayed(const Duration(milliseconds: 1800), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const MainShell(),
+                const AuthGate(),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) =>
                     FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 600),
+            transitionDuration: const Duration(milliseconds: 500),
           ),
         );
       }
@@ -40,7 +42,6 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
                 Container(
                       width: 120,
                       height: 120,
@@ -55,16 +56,12 @@ class _SplashScreenState extends State<SplashScreen> {
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Text('🍃', style: TextStyle(fontSize: 56)),
-                      ),
+                      child: const Center(child: WessLessLogoMark(size: 86)),
                     )
                     .animate()
                     .scale(duration: 600.ms, curve: Curves.easeOutBack)
                     .fadeIn(duration: 400.ms),
                 const SizedBox(height: 32),
-
-                // App Name
                 Text(
                       'WessLess',
                       style: Theme.of(context).textTheme.headlineLarge
@@ -72,16 +69,12 @@ class _SplashScreenState extends State<SplashScreen> {
                             color: Colors.white,
                             fontSize: 36,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: -1,
                           ),
                     )
                     .animate(delay: 300.ms)
                     .fadeIn(duration: 500.ms)
                     .slideY(begin: 0.3, end: 0, duration: 500.ms),
-
                 const SizedBox(height: 8),
-
-                // Tagline
                 Text(
                       'Produksi Cerdas, Kurangi Sisa',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -93,10 +86,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     .animate(delay: 500.ms)
                     .fadeIn(duration: 500.ms)
                     .slideY(begin: 0.3, end: 0, duration: 500.ms),
-
                 const SizedBox(height: 48),
-
-                // Subtitle
                 Text(
                   'AI-Powered Production Forecasting\nuntuk UMKM Kuliner',
                   textAlign: TextAlign.center,
@@ -105,10 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     fontSize: 12,
                   ),
                 ).animate(delay: 700.ms).fadeIn(duration: 500.ms),
-
                 const SizedBox(height: 48),
-
-                // Loading indicator
                 SizedBox(
                   width: 28,
                   height: 28,
