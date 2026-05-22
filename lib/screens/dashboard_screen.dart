@@ -3,6 +3,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../core/theme.dart';
 import '../core/food_image.dart';
 import '../data/mock_data.dart';
+import '../models/sales_transaction.dart';
+import '../services/sales_report_service.dart';
+import '../widgets/wessless_logo_mark.dart';
+import 'sales_report_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final VoidCallback? onOpenRestock;
@@ -19,6 +23,12 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final todayTransactions = SalesReportService.todayTransactions();
+    final todaySummary = SalesReportService.summarize(todayTransactions);
+    final recentTransactions = SalesReportService.allTransactions()
+        .take(5)
+        .toList();
+
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
@@ -105,49 +115,25 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/sprout.png',
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    const WessLessLogoMark(size: 56),
                   ],
                 ),
               ),
             ),
 
-            // Quick Stats
+            // Dashboard Report Summary
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Row(
-                  children: [
-                    _StatCard(
-                      label: 'Penjualan Hari Ini',
-                      value: MockData.formatCurrency(
-                        MockData.todayStats['total_sales'],
+                child: _DashboardReportCard(
+                  summary: todaySummary,
+                  onOpenReport: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SalesReportScreen(),
                       ),
-                      icon: Icons.payments_outlined,
-                      color: WessLessTheme.info,
-                    ),
-                    const SizedBox(width: 12),
-                    _StatCard(
-                      label: 'Porsi Terjual',
-                      value: '${MockData.todayStats['total_portions']}',
-                      icon: Icons.restaurant_rounded,
-                      color: WessLessTheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    _StatCard(
-                      label: 'Sisa Hari Ini',
-                      value: '${MockData.todayStats['total_waste']}',
-                      icon: Icons.delete_outline_rounded,
-                      color: WessLessTheme.riskLow,
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -447,12 +433,11 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ),
-            SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final trx = MockData.recentTransactions[index];
-                return Container(
+            if (recentTransactions.isEmpty)
+              SliverToBoxAdapter(
+                child: Container(
                   margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: WessLessTheme.surfaceCard,
                     borderRadius: BorderRadius.circular(12),
@@ -460,66 +445,96 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: WessLessTheme.primary.withAlpha(15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${trx['qty']}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: WessLessTheme.primary,
-                            ),
-                          ),
-                        ),
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        color: WessLessTheme.textHint,
+                        size: 22,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Text(
+                          'Belum ada transaksi',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final trx = recentTransactions[index];
+                  return Container(
+                    margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: WessLessTheme.surfaceCard,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: WessLessTheme.primary.withAlpha(15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${trx.totalQuantity}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: WessLessTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                trx.transactionId,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleMedium?.copyWith(fontSize: 13),
+                              ),
+                              Text(
+                                _formatItems(trx.items),
+                                style: Theme.of(context).textTheme.bodySmall,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              trx['id'],
+                              MockData.formatCurrency(trx.totalAmount),
                               style: Theme.of(
                                 context,
                               ).textTheme.titleMedium?.copyWith(fontSize: 13),
                             ),
                             Text(
-                              (trx['items'] as List).take(2).join(', '),
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              trx.time,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(fontSize: 10),
                             ),
                           ],
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            MockData.formatCurrency(trx['total']),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium?.copyWith(fontSize: 13),
-                          ),
-                          Text(
-                            trx['time'],
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.copyWith(fontSize: 10),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }, childCount: MockData.recentTransactions.length),
-            ),
+                      ],
+                    ),
+                  );
+                }, childCount: recentTransactions.length),
+              ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
@@ -534,61 +549,147 @@ class DashboardScreen extends StatelessWidget {
     if (v >= 0.85) return WessLessTheme.primary;
     return WessLessTheme.warning;
   }
+
+  static String _formatItems(List<SalesTransactionItem> items) {
+    return items
+        .map(
+          (item) => item.quantity > 1
+              ? '${item.itemName} x${item.quantity}'
+              : item.itemName,
+        )
+        .join(', ');
+  }
 }
 
-class _StatCard extends StatelessWidget {
+class _DashboardReportCard extends StatelessWidget {
+  final SalesSummary summary;
+  final VoidCallback onOpenReport;
+
+  const _DashboardReportCard({
+    required this.summary,
+    required this.onOpenReport,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: WessLessTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: WessLessTheme.primary.withAlpha(15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.summarize_rounded,
+                  color: WessLessTheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Report Hari Ini',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    Text(
+                      'Ringkasan dari transaksi POS',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              _ReportMetric(
+                label: 'Omzet',
+                value: MockData.formatCurrency(summary.totalRevenue),
+              ),
+              const SizedBox(width: 10),
+              _ReportMetric(
+                label: 'Transaksi',
+                value: '${summary.transactionCount}',
+              ),
+              const SizedBox(width: 10),
+              _ReportMetric(label: 'Item', value: '${summary.totalItemsSold}'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onOpenReport,
+              icon: const Icon(Icons.receipt_long_rounded, size: 18),
+              label: const Text('Detail Report'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportMetric extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
-  final Color color;
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+  const _ReportMetric({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     final isCurrencyValue = value.startsWith('Rp');
 
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: WessLessTheme.surfaceCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  value,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontSize: isCurrencyValue ? 13 : 15,
-                    fontWeight: FontWeight.w800,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: isCurrencyValue ? 13 : 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    maxLines: 1,
                   ),
-                  maxLines: 1,
                 ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontSize: 10),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 10),
+              ),
+            ],
+          ),
         ),
       ),
     );

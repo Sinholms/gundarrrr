@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../core/food_image.dart';
 import '../data/mock_data.dart';
+import '../widgets/wessless_logo_mark.dart';
 
 class ForecastScreen extends StatelessWidget {
   const ForecastScreen({super.key});
@@ -80,7 +81,7 @@ class ForecastScreen extends StatelessWidget {
                     ),
                     Column(
                       children: [
-                        const Text('🤖', style: TextStyle(fontSize: 36)),
+                        const WessLessLogoMark(size: 54),
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
